@@ -7,6 +7,9 @@
 *.pyz
 *.pywz
 
+*.csv
+*.log
+
 __pycache__
 
 pytest_cache
