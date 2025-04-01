@@ -1,4 +1,6 @@
-print("start ==> example_5/sitecustomize.py")
+import os
+import threading
+print(f"start ==> example_5/sitecustomize.py (pid: {os.getpid()}, thread: {threading.current_thread().ident})")
 
 # hook numpy operations using dispatch mechanism to monitor inputs and outputs
 # this code will hook numpy operations to log and save data while preserving original functionality
@@ -35,7 +37,6 @@ def print_numpy_data(inputs, result, op_name):
     for i, inp in enumerate(inputs):
         print(f"\033[1;32m\t- Input {i+1}: \033[0m", inp)
     print(f"\033[1;32m\t- Output: \033[0m", result)
-
 
 
 
@@ -112,4 +113,4 @@ for ufunc_name in dir(np):
 print("\033[1;32m\tAll NumPy operations are now hooked to log inputs and outputs\033[0m")
 print("\033[1;33m\tOriginal functionality is preserved but inputs and outputs will be logged and saved as npy files\033[0m")
 
-print("end ==> example_5/sitecustomize.py")
+print(f"end ==> example_5/sitecustomize.py (pid: {os.getpid()}, thread: {threading.current_thread().ident})")

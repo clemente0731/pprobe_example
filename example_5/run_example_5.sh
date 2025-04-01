@@ -2,6 +2,7 @@
 
 # python -m site
 
+rm -rf np_op_dumps || true
 
 unset PYTHONPATH
 echo -e "\n ORIGIN --------------------------------------------"

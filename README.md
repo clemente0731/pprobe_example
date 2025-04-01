@@ -1,49 +1,93 @@
-python runtime hook presentation
+# NumPy 操作监控与拦截系统
 
+这个项目展示了如何通过 Python 和 NumPy 的分发机制（dispatch mechanism）实现对所有 NumPy 操作的全范围监控和拦截，而无需修改用户代码。
 
-# 在讲述如何实现hook这套方案之间, 我想先描述一下遇到的问题 或者说 钉子
+## 核心理念
 
-# 一行不改 -> 兼容 compatibility
-# 批量捕获 -> 减少后处理 reduce post-processing
+通过利用 Python 的 `site` 模块加载机制和 NumPy 的分发机制，我们可以在不修改现有代码的情况下，实现对所有 NumPy 操作的监控、日志记录和数据导出。
 
-# before i present how hook did 
+### 关键组件
 
-# non-intrusive modification and compatibility in the open-source cuda-like community.
-torch.device("cuda")    --> torch.device("asic_device")
-torch.device("cuda:2")  --> torch.device("asic_deivce:2")
+1. **site 模块加载机制**：
+   - `sitecustomize.py`：Python 启动时自动加载的模块，全局生效
+   - `usercustomize.py`：仅在 PYTHONPATH 中指定时加载，可按需启用
 
-最坏的情况你需要对所有的开源库做一遍适配
+2. **NumPy 分发机制**：
+   - `np.ufunc` - 处理基础数学运算（如加、减、乘、除等）
+   - `np.ndarray.__array_ufunc__` - 处理通用函数操作
+   - `np.ndarray.__array_function__` - 处理高级数组操作
 
-# Examine the level of the accuracy generalization ability of this software stack via the modelzoo which is cuda-like.
-# 1700-1800 models from torchvision,transformers,pytorch-image-models,diffusers,mmcv in limited resources
+## 实现方式
 
-source_a_model_a -> different optimizers + different steps -> training_res_output
-source_a_model_b -> different optimizers + different steps -> training_res_output
-source_b_model_a -> different optimizers + different steps -> training_res_output
-...
-source_n_model_n -> different optimizers + different steps -> training_res_output
+本系统主要通过以下方式实现全操作范围的控制：
 
-最坏的情况你需要对1800个模型单独做后处理
+1. **装饰器模式**：使用装饰器包装所有 NumPy 的 ufunc 操作
+2. **运行时替换**：通过替换 NumPy 命名空间中的函数实现监控
+3. **环境变量控制**：通过 PYTHONPATH 环境变量控制是否启用监控系统
 
-# 模型优化 或者 某些功能fallback
-用户本地代码+python third_lib + python buildin-lib 有一些高度封装的库, 我们在使用的时候不确定他做了什么或者没做什么, 如果需要做图的优化或者某个layer的修改
-可能是 用户本地代码 需要修改
-可能是 python third_lib 需要修改
-可能是 用户本地代码 + third_lib 需要修改
-可能是 用户本地代码 + third_lib_a + third_lib_b + ... + third_lib_n 需要修改
+```python
+# 核心实现原理
+def monitor_ufunc(ufunc_obj):
+    original_call = ufunc_obj.__call__
+    
+    @functools.wraps(original_call)
+    def wrapped_call(*args, **kwargs):
+        # 前置处理：记录输入
+        result = original_call(*args, **kwargs)  # 调用原始函数
+        # 后置处理：记录输出
+        return result
+    
+    return wrapped_call
 
-最坏的情况你需要对用 户本地代码 + third_lib_a + third_lib_b + ... + third_lib_n 前处理
+# 应用到所有 ufunc 函数
+for ufunc_name in dir(np):
+    obj = getattr(np, ufunc_name)
+    if isinstance(obj, np.ufunc):
+        setattr(np, ufunc_name, monitor_ufunc(obj))
+```
 
-# WORKAROUND
-1. 第三方库产生的非客户或者交付产品的问题
-2. 第三方库导致的性能或者写法问题 numpy -> jax.numpy
+## 使用方法
 
-# 钉子有了 我们来定义一下钉子的正确定义
-# 需要有一种机制能够实现 python运行时的对某些函数的替换/修改/输入输出和函数内变量的导出
+1. 全局启用监控（适用于所有 Python 脚本）：
+   - 将 `sitecustomize.py` 放到 Python 的 site-packages 目录中
 
-# 那么现在我们去造锤子
-# 实现hook可以分成两部分
-1. 控制权 -> 如何接管程序执行流程 -> 提供 运行时 全局作用域 能够替换 的能力
-2. patch/replace   -> 在 进程生命周期内 保证 函数的替换/修改/输入输出和函数内变量 
-   1. -> Monkeypatch -> 在 Python 中，类、函数、方法等都是对象，变量只是对这些对象的引用
-      1. Monkeypatch 就是通过重新赋值这些变量，将原来的对象替换为新的对象。# pprobe_example
+2. 按需启用监控（仅针对特定运行）：
+   - 设置 PYTHONPATH 环境变量指向包含 `usercustomize.py` 的目录
+   - 示例：`PYTHONPATH="${PYTHONPATH}:$(pwd)" python example_5.py`
+
+3. 运行示例脚本：
+   ```bash
+   ./run_example_5.sh
+   ```
+
+## 数据导出
+
+所有被监控的 NumPy 操作的输入和输出将被自动保存：
+
+- 保存位置：`np_op_dumps/` 目录
+- 文件格式：`.npy` 文件（NumPy 原生格式）
+- 命名规则：`op_{操作名}_input{序号}_{前缀}.npy` 和 `op_{操作名}_output_{前缀}.npy`
+
+## 应用场景
+
+1. **深度学习调试**：跟踪模型内部的数值变化和梯度流动
+2. **性能分析**：识别高频使用的 NumPy 操作进行优化
+3. **数据流分析**：了解复杂计算中的数据处理路径
+4. **单元测试**：自动保存中间结果用于回归测试
+5. **教学工具**：可视化 NumPy 操作的实际效果
+
+## 优势
+
+- **非侵入式**：不需要修改现有代码
+- **全覆盖**：捕获所有 NumPy 操作
+- **灵活控制**：可以通过环境变量启用或禁用
+- **选择性监控**：可以扩展为仅监控特定操作
+- **原始功能保留**：在监控的同时保持原有功能不变
+
+## 扩展方向
+
+可以类似地扩展到其他库的操作监控：
+- PyTorch 张量操作
+- TensorFlow 计算图操作
+- Pandas 数据操作
+- 其他科学计算库 
