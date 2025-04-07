@@ -175,12 +175,11 @@ if HOOK_NUMPY_TOGGLE:
         priority=50
     )
 if HOOK_A_TOGGLE:
-    from hook_package_demo.hook_collection.a_hook import a_hook
+    from hook_package_demo.hook_collection.a_hook import install as a_hook
     a_hook()
 if HOOK_B_TOGGLE:
-    from hook_package_demo.hook_collection.b_hook import b_hook
+    from hook_package_demo.hook_collection.b_hook import install as b_hook
     b_hook()
 if HOOK_C_TOGGLE:
-    from hook_package_demo.hook_collection.c_hook import c_hook
+    from hook_package_demo.hook_collection.c_hook import install as c_hook
     c_hook()
-
