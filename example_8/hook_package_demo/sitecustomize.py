@@ -169,18 +169,18 @@ HOOK_C_TOGGLE = toggle_manager.get_toggle("HOOK_C")
 
 if HOOK_NUMPY_TOGGLE:
     # add a hook to replace numpy.add with numpy.sub function
-    from example_8.hook_package_demo.hook_collection.numpy_hook import numpy_func_warpper
+    from hook_package_demo.hook_collection.numpy_hook import numpy_func_warpper
     manager.add_hook(
         FunctionHook("numpy", "add", numpy_func_warpper),
         priority=50
     )
 if HOOK_A_TOGGLE:
-    from example_8.hook_package_demo.hook_collection.a_hook import a_hook
+    from hook_package_demo.hook_collection.a_hook import a_hook
     a_hook()
 if HOOK_B_TOGGLE:
-    from example_8.hook_package_demo.hook_collection.b_hook import b_hook
+    from hook_package_demo.hook_collection.b_hook import b_hook
     b_hook()
 if HOOK_C_TOGGLE:
-    from example_8.hook_package_demo.hook_collection.c_hook import c_hook
+    from hook_package_demo.hook_collection.c_hook import c_hook
     c_hook()
 
