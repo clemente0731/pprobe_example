@@ -14,7 +14,7 @@ class HookManager(importlib.abc.MetaPathFinder):
         self.hooks.sort(key=lambda x: -x[0])  # higher priority first
 
     def find_spec(self, fullname, path, target=None):
-        print(f"HookManager ><>>>>>>> [Hook] captured module import: {fullname}, path: {path}, target: {target}")
+        # print(f"HookManager ><>>>>>>> [Hook] captured module import: {fullname}, path: {path}, target: {target}")
         if fullname in self._processing:
             return None
             
@@ -43,15 +43,15 @@ class BaseHook(importlib.abc.MetaPathFinder, importlib.abc.Loader):
             self._active = prev_state
 
     def find_spec(self, fullname, path, target=None):
-        print(f"BaseHook ><>>>>>>> [Hook] captured module import: {fullname}, path: {path}, target: {target}")
+        # print(f"BaseHook ><>>>>>>> [Hook] captured module import: {fullname}, path: {path}, target: {target}")
         if not self._active:
-            print(f"BaseHook ><>>>>>>> [Hook] not processing module import: {fullname}, reason: hook not active")
+            # print(f"BaseHook ><>>>>>>> [Hook] not processing module import: {fullname}, reason: hook not active")
             return None
         if not self.can_handle(fullname):
-            print(f"BaseHook ><>>>>>>> [Hook] not processing module import: {fullname}, reason: module name does not match")
+            # print(f"BaseHook ><>>>>>>> [Hook] not processing module import: {fullname}, reason: module name does not match")
             return None
         
-        print(f"BaseHook ><>>>>>>> [Hook] processing module import: {fullname}, reason: module name matches and hook is active")
+        # print(f"BaseHook ><>>>>>>> [Hook] processing module import: {fullname}, reason: module name matches and hook is active")
         return importlib.util.spec_from_loader(fullname, self)
 
     def can_handle(self, fullname):
@@ -141,8 +141,6 @@ class FunctionHook(BaseHook):
             else:
                 print(f"warning: function {self.func_name} not found in module {module.__name__}")
 
-
-# 初始化管理器
 manager = HookManager()
 # insert the hook manager at the beginning of sys.meta_path
 # sys.meta_path is a core component of Python's module import system, a list containing all meta path finders
@@ -160,19 +158,29 @@ manager = HookManager()
 sys.meta_path.insert(0, manager)
 
 
-def numpy_func_warpper(original_function):
-    # function to replace numpy.add with numpy.sub
-    def wrapped_f(a, b):
-        # call numpy.sub directly instead of add
-        print(f"debug: ><>>>>>>> original function being called: {original_function}")
-        c = original_function(a, b)
-        print(f"debug: ><>>>>>>> result after function execution: {c}")
-        print("debug: ><>>>>>>> function execution completed successfully")
-        return c
-    return wrapped_f
+from hook_package_demo.cli import ToggleManager
 
-# add a hook to replace numpy.add with numpy.sub function
-manager.add_hook(
-    FunctionHook("numpy", "add", numpy_func_warpper),
-    priority=50
-)
+toggle_manager = ToggleManager()
+HOOK_NUMPY_TOGGLE = toggle_manager.get_toggle("HOOK_NUMPY")
+HOOK_A_TOGGLE = toggle_manager.get_toggle("HOOK_A")
+HOOK_B_TOGGLE = toggle_manager.get_toggle("HOOK_B")
+HOOK_C_TOGGLE = toggle_manager.get_toggle("HOOK_C")
+
+
+if HOOK_NUMPY_TOGGLE:
+    # add a hook to replace numpy.add with numpy.sub function
+    from example_8.hook_package_demo.hook_collection.numpy_hook import numpy_func_warpper
+    manager.add_hook(
+        FunctionHook("numpy", "add", numpy_func_warpper),
+        priority=50
+    )
+if HOOK_A_TOGGLE:
+    from example_8.hook_package_demo.hook_collection.a_hook import a_hook
+    a_hook()
+if HOOK_B_TOGGLE:
+    from example_8.hook_package_demo.hook_collection.b_hook import b_hook
+    b_hook()
+if HOOK_C_TOGGLE:
+    from example_8.hook_package_demo.hook_collection.c_hook import c_hook
+    c_hook()
+

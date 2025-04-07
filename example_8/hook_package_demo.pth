@@ -1,1 +1,1 @@
-import site; site.addsitedir('hook_package_demo')
+import site; site.addsitedir("hook_package_demo")

@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+from setuptools.command.build_py import build_py
 import os
 import sys
 import site
@@ -23,6 +24,31 @@ if 'develop' in sys.argv:
     except Exception as e:
         print(f"Warning: Could not copy {pth_file} to {site_packages}: {e}")
         print("You may need to manually copy the file or run with elevated permissions")
+
+class build_py_with_pth_file(build_py):
+    """Include the .pth file for this project, in the generated wheel."""
+
+    def run(self):
+        super().run()
+
+        self.copy_pth()
+        self.copy_toggle()
+
+    def copy_pth(self):
+        destination_in_wheel = "hook_package_demo.pth"
+        location_in_source_tree = "hook_package_demo.pth"
+        outfile = os.path.join(self.build_lib, destination_in_wheel)
+        self.copy_file(location_in_source_tree, outfile, preserve_mode=0)
+
+    def copy_toggle(self):
+        src_file = "hook_package_demo/hook.toggle.default"
+        dst_file = "hook_package_demo/hook.toggle.running"
+        dst_build_file = os.path.join(self.build_lib, dst_file)
+        try:
+            shutil.copyfile(src_file, dst_build_file)
+            print(f"Copied {src_file} to {dst_build_file}")
+        except FileNotFoundError:
+            print(f"Source file {src_file} does not exist")
 
 # add verification function
 def verify_installation():
@@ -108,7 +134,7 @@ setup(
     """,
     long_description_content_type="text/markdown",
     # support for development mode
-    use_develop=True,
+    cmdclass={"build_py": build_py_with_pth_file},
 )
 
 # run verification if requested
