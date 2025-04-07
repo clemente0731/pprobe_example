@@ -1,0 +1,19 @@
+# include all files in the hook_package_demo package
+recursive-include hook_package_demo *
+
+# include python files
+include hook_package_demo/*.py
+
+# include any subpackages
+recursive-include hook_package_demo/*/
+
+# exclude temporary files and caches
+global-exclude *.py[cod] *.so *.dylib
+global-exclude __pycache__/
+global-exclude *.egg-info/
+global-exclude .DS_Store
+global-exclude .git*
+global-exclude .*.swp
+global-exclude .coverage
+global-exclude htmlcov/
+global-exclude hook.toggle.running
