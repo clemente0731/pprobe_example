@@ -14,5 +14,6 @@ echo -e "\n CHANGED--------------------------------------------"
 echo -e "\n set PYTHONPATH and run python example_6.py"
 PYTHONPATH="${PYTHONPATH}:$(pwd)" python example_6.py
 
+# since the error above has already exited, the following needs to be executed manually
 # echo -e "\n RUN TEST--------------------------------------------"
-# pytest -vv -s test_example_6.py
+# PYTHONPATH="${PYTHONPATH}:$(pwd)" pytest -vv -s test_gen_from_bug.py
