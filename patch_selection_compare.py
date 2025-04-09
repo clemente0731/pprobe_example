@@ -55,15 +55,12 @@ def audit_hook(event, args):
             if 'c' not in args[2] and len(args[1]) < 3:
                 args[2]['c'] = 20
 
-# register the audit hook
-sys.addaudithook(audit_hook)
 
 start_time = time.time()
 for _i in range(10000):
-    example_func(1, 2, 3)
+    # register the audit hook
+    sys.addaudithook(audit_hook)
 end_time = time.time()
 audit_duration = end_time - start_time
 print("Audit Time:", end_time - start_time)
 print(f"Audit Time / Monkey Patching Time = {audit_duration/monkey_patch_duration}")
-
-########################################################
